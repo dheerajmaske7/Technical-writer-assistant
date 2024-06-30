@@ -1,0 +1,69 @@
+def add_line_numbers(lines):
+    return [f"{i + 1}: {line}" for i, line in enumerate(lines)]
+
+def save_cleaned_code(cleaned_lines, output_path):
+    with open(output_path, 'w') as file:
+        file.write('\n'.join(cleaned_lines))
+
+def generate_annotations(cleaned_lines):
+    """
+    Generate annotations for the cleaned code lines.
+
+    Args:
+    cleaned_lines (list): List of cleaned code lines with line numbers.
+
+    Returns:
+    list: A list of annotations where each annotation is a list [line_number, annotation].
+    """
+    vulnerabilities = {
+        r'balances\s*\[\s*msg\.sender\s*\]\s*=\s*msg\.value\s*;': "Unchecked Balance Assignment",
+        r'\bnumber\s*\+=\s*num\s*;': "Integer Overflow/Underflow",
+        r'msg\.sender\.call': "Unchecked External Call",
+        r'target\.call\s*\{\s*value\s*:\s*amount\s*\}': "Unchecked External Call with Value",
+        r'blockhash\s*\(\s*block\.number\s*-\s*1\s*\)': "Use of blockhash",
+        r'\bfor\s*\(\s*uint256\s+i\s*=\s*0\s*;\s*i\s*<\s*data\.length\s*;\s*i\s*\+\+\s*\)': "Unbounded Loop",
+        r'\bnumber\s*=\s*num\s*;': "Variable Assignment Without Checks",
+        r'balances\s*\[\s*msg\.sender\s*\]\s*=\s*newBalance\s*;': "Unchecked Balance Assignment",
+        r'send\s*\(\s*amount\s*\)': "Use of send() without checking return value",
+        r'call\s*\(\s*value\s*:\s*amount\s*\)': "Use of call() without checking return value",
+        r'\bassert\s*\(': "Use of assert statement",
+        r'\brevert\s*\(': "Use of revert statement",
+        r'\brequire\s*\(': "Use of require statement",
+        r'\bselfdestruct\s*\(': "Use of selfdestruct statement",
+        r'\btx\.origin\b': "Use of tx.origin",
+        r'\bblock\.timestamp\b': "Use of block.timestamp",
+        r'\bblock\.difficulty\b': "Use of block.difficulty",
+        r'\bblock\.gaslimit\b': "Use of block.gaslimit",
+        r'\bmsg\.sender\b': "Use of msg.sender",
+        r'\bmsg\.value\b': "Use of msg.value",
+        r'\bblockhash\s*\(': "Use of blockhash function",
+        r'\bnow\b': "Use of now (alias for block.timestamp)",
+        r'\bdelegatecall\b': "Use of delegatecall",
+        r'\bcallcode\b': "Use of callcode",
+        r'\bsuicide\b': "Use of suicide (deprecated selfdestruct)",
+        r'\bthrow\b': "Use of throw (deprecated revert)",
+        r'\bassembly\b': "Use of assembly code",
+        r'\bexternal\b': "Declaration of external function",
+        r'\bpublic\b': "Declaration of public function",
+        r'\bprivate\b': "Declaration of private function",
+        r'\bconstant\b': "Declaration of constant state variable or function",
+        r'\bpure\b': "Declaration of pure function",
+        r'\bview\b': "Declaration of view function",
+        r'\bpayable\b': "Declaration of payable function"
+    }
+
+    annotations = []
+    vulnerability_details = []
+    for i, line in enumerate(cleaned_lines):
+        found_vulnerability = False
+        for pattern, vulnerability_type in vulnerabilities.items():
+            if re.search(pattern, line):
+                annotations.append([i + 1, 1])  # 1 indicates vulnerability
+                vulnerability_details.append([i + 1, vulnerability_type])
+                found_vulnerability = True
+                break
+        if not found_vulnerability:
+            annotations.append([i + 1, 0])  # 0 indicates no vulnerability
+            vulnerability_details.append([i + 1, "No Vulnerability"])
+
+    return annotations, vulnerability_details
